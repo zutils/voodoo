@@ -16,6 +16,7 @@ use xml::attribute::OwnedAttribute;
 
 const INDENT: &'static str = "    ";
 const PRINT: bool = false;
+const PRINT2: bool = false;
 const ORIG_USE: &str = "vks";
 const ORIG_PRE: &str = "vks::";
 
@@ -1113,6 +1114,7 @@ impl MemberSig {
 fn write_set_fn(o: &mut BufWriter<File>, s: &Struct, m: &Member, impl_type_param: &str,
         impl_type_param_block: &str, structs: &HashMap<String, Struct>, is_for_builder: bool)
         -> io::Result<()> {
+        
     let t = INDENT;
     // Skip excluded members and "...Count" members that have associated
     // pointer members (stuff that gets merged into a slice).
@@ -1179,8 +1181,11 @@ fn write_set_fn(o: &mut BufWriter<File>, s: &Struct, m: &Member, impl_type_param
     // } else {
     set_counts(o, "")?;
     write!(o, "{t}{t}self.raw.{} = ", m.orig_name, t=t)?;
+    
+    let mut set_bitmask = true;
     if sig.arg_is_struct {
         if m.is_ptr {
+            set_bitmask = false;
             if sig.arg_is_slice && sig.arg_is_repr_c {
                 if m.is_const {
                     write!(o, "{}.as_ptr() as *const ", sig.fn_name)?;
@@ -1192,7 +1197,7 @@ fn write_set_fn(o: &mut BufWriter<File>, s: &Struct, m: &Member, impl_type_param
             } else {
                 write!(o, "{}.as_raw()", sig.fn_name)?;
             }
-        } else {
+        } else { //not pointer.
             if let Some(ref len) = m.array_len {
                 if sig.arg_is_repr_c {
 
@@ -1218,7 +1223,7 @@ fn write_set_fn(o: &mut BufWriter<File>, s: &Struct, m: &Member, impl_type_param
                 write!(o, "{}.raw", sig.fn_name)?;
             }
         }
-    } else {
+    } else { //not struct.
         if m.is_handle_type {
             if sig.arg_is_slice {
                 // assert!(s.special_fields.contains_key(&m.voodoo_name),
@@ -1257,7 +1262,11 @@ fn write_set_fn(o: &mut BufWriter<File>, s: &Struct, m: &Member, impl_type_param
     }
     writeln!(o, ";")?;
     // }
+    
     if is_for_builder {
+        if set_bitmask {
+            writeln!(o, "{t}{t}self.set_mask |= {}Flags::FLAG_{};", s.voodoo_name, m.orig_name.to_uppercase(), t=t)?;
+        }
         writeln!(o, "{t}{t}self", t=t)?;
     }
 
@@ -1266,6 +1275,25 @@ fn write_set_fn(o: &mut BufWriter<File>, s: &Struct, m: &Member, impl_type_param
     Ok(())
 }
 
+fn write_begin_option_check(o: &mut BufWriter<File>, s: &Struct, m: &Member, is_for_builder: bool) -> io::Result<()> {
+    let t = INDENT;
+    if is_for_builder {
+        write!(o, "{t}{t}if self.set_mask & {}Flags::FLAG_{} != {}Flags::FLAG_{} {{ return None }}\n{t}{t}Some( ", 
+                    s.voodoo_name, m.orig_name.to_uppercase(), s.voodoo_name, m.orig_name.to_uppercase(), t=t)?;      
+    } else {
+        write!(o, "{t}{t}", t=t)?; //not builders ALL have 2 tabs!!!
+    }
+    
+    Ok(())
+}
+
+fn write_end_option_check(o: &mut BufWriter<File>, is_for_builder: bool) -> io::Result<()> {
+    if is_for_builder {
+        write!(o, " )")?;
+    }
+    
+    Ok(())
+}
 
 /// Writes a getter function to the output buffer.
 fn write_get_fn(o: &mut BufWriter<File>, s: &Struct, m: &Member, impl_type_param: &str,
@@ -1282,7 +1310,7 @@ fn write_get_fn(o: &mut BufWriter<File>, s: &Struct, m: &Member, impl_type_param
     //     sig.fn_name
     // };
 
-    let return_type = if m.is_handle_type {
+    let mut return_type = if m.is_handle_type {
         if let Some(_) = m.ptr_count_member_orig_name {
             format!("&'a [{}{}]", ORIG_PRE, m.orig_type)
         } else if m.is_ptr {
@@ -1295,25 +1323,35 @@ fn write_get_fn(o: &mut BufWriter<File>, s: &Struct, m: &Member, impl_type_param
     };
 
     let get_pre = if is_for_builder { "get_" } else { "" };
+    if is_for_builder {
+        return_type = format!("Option<{}>", return_type);
+    }
 
     writeln!(o, "{t}pub fn {}{}<{}>(&'a self) -> {} {{", get_pre, fn_name,
         sig.get_fn_type_params, return_type, t=t)?;
 
     if sig.arg_is_struct {
         if m.is_ptr {
+            //pointers can be handled with is_null(). Only write test for builders. Begin Option<> Check.
+            if is_for_builder {
+                write!(o, "{t}{t}if self.raw.{}.is_null() {{ return None }}\n{t}{t}Some( ", m.orig_name, t=t)?;
+            } else {
+                write!(o, "{t}{t}", t=t)?;
+            }
             if sig.arg_is_slice {
                 if let Some(ref count_orig_name) = m.ptr_count_member_orig_name {
                     if count_orig_name == "codeSize" {
-                        write!(o, "{t}{t}unsafe {{ slice::from_raw_parts(self.raw.{} as *const _, \
-                            self.raw.{} / 4) }}", m.orig_name, count_orig_name, t=t)?;
+                        write!(o, "unsafe {{ slice::from_raw_parts(self.raw.{} as *const _, \
+                            self.raw.{} / 4) }}", m.orig_name, count_orig_name)?;
                     // } else if sig.arg_is_repr_c {
                     //     write!(o, "{t}{t}unsafe {{ slice::from_raw_parts(self.raw.{} as *const _, \
                     //         self.raw.{} as usize) }}", m.orig_name, count_orig_name, t=t)?;
                     } else {
-                        write!(o, "{t}{t}unsafe {{ slice::from_raw_parts(self.raw.{} as *const _, \
-                            self.raw.{} as usize) }}", m.orig_name, count_orig_name, t=t)?;
+                        write!(o, "unsafe {{ slice::from_raw_parts(self.raw.{} as *const _, \
+                            self.raw.{} as usize) }}", m.orig_name, count_orig_name)?;
                     }
                 } else {
+                    panic!("Struct is Ptr/Slice with no count orig name!");
                     // write!(o, "{t}{t}&*(self.raw.{} as *const {}{} as *const _)", m.orig_name,
                     //     ORIG_PRE, m.orig_type, t=t)?;
                     // write!(o, "{t}{t}", t=t)?;
@@ -1322,33 +1360,40 @@ fn write_get_fn(o: &mut BufWriter<File>, s: &Struct, m: &Member, impl_type_param
                 }
             } else {
                 assert!(sig.arg_is_repr_c);
-                write!(o, "{t}{t}unsafe {{ &*(self.raw.{} as *const {}{} as *const _) }}", m.orig_name,
-                    ORIG_PRE, m.orig_type, t=t)?;
+                write!(o, "unsafe {{ &*(self.raw.{} as *const {}{} as *const _) }}", m.orig_name,
+                    ORIG_PRE, m.orig_type)?;
             }
-        } else {
+            
+            write_end_option_check(o, is_for_builder)?;
+            
+        } else { //non-ptr type
+            write_begin_option_check(o, &s, &m, is_for_builder)?;
+           
             if let Some(ref len) = m.array_len {
-                write!(o, "{t}{t}", t=t)?;
-                write!(o, "unsafe {{ slice::from_raw_parts(&self.raw.{} \
+                write!(o, " unsafe {{ slice::from_raw_parts(&self.raw.{} \
                     as *const {}{} as *const _, ", m.orig_name, ORIG_PRE, m.orig_type)?;
                 match len.parse::<usize>() {
                     Ok(_) => write!(o, "{} as usize) ", len)?,
                     Err(_) => write!(o, "{}{} as usize) ", ORIG_PRE, len)?,
                 }
-                write!(o, "}}",  )?;
+                write!(o, "}}")?;
             } else {
                 assert!(sig.arg_is_repr_c);
-                write!(o, "{t}{t}unsafe {{ &*(&self.raw.{} as *const {}{} as *const {}) }}", m.orig_name,
-                    ORIG_PRE, m.orig_type, m.voodoo_type, t=t)?;
+                write!(o, " unsafe {{ &*(&self.raw.{} as *const {}{} as *const {}) }}", m.orig_name,
+                    ORIG_PRE, m.orig_type, m.voodoo_type)?;
             }
+            
+            write_end_option_check(o, is_for_builder)?;
         }
-    } else {
+    } else { //non-struct type
         // write!(o, "{t}{t}self.raw.{}", m.orig_name, t=t)?;
+        //handle non-set value. Also, begin braces for Some( when returning Option<>
+        write_begin_option_check(o, &s, &m, is_for_builder)?;
+        
         if let Some(ref count_orig_name) = m.ptr_count_member_orig_name {
-            write!(o, "{t}{t}", t=t)?;
             write!(o, "unsafe {{ slice::from_raw_parts(self.raw.{} as *const _, self.raw.{} as usize) }}",
                 m.orig_name, count_orig_name)?;
         } else if sig.convert_return_to_c_str {
-            write!(o, "{t}{t}", t=t)?;
             write!(o, "unsafe {{ CStr::from_ptr(")?;
             match m.array_len {
                 Some(_) => write!(o, "&self.raw.{} as *const _", m.orig_name)?,
@@ -1362,7 +1407,6 @@ fn write_get_fn(o: &mut BufWriter<File>, s: &Struct, m: &Member, impl_type_param
                     // write!(o, "unsafe {{ slice::from_raw_parts(self.raw.{} as *const _, \
                     //     {} as usize) }}", m.orig_name, len)?;
 
-                    write!(o, "{t}{t}", t=t)?;
                     write!(o, "unsafe {{ slice::from_raw_parts(&self.raw.{} as *const _, ", m.orig_name)?;
                     match len.parse::<usize>() {
                         Ok(_) => write!(o, "{} as usize) ", len)?,
@@ -1373,27 +1417,30 @@ fn write_get_fn(o: &mut BufWriter<File>, s: &Struct, m: &Member, impl_type_param
                 None => panic!("supposed to convert to slice but no len avail"),
             }
         } else if sig.convert_return_to_flags {
-            write!(o, "{t}{t}{}::from_bits(self.raw.{})\n{t}{t}{t}\
+            write!(o, "{}::from_bits(self.raw.{})\n{t}{t}{t}\
                 .expect(\"{}::{}: error converting flags\")",
                 m.voodoo_type, m.orig_name, s.voodoo_name, fn_name, t=t)?;
         } else if m.voodoo_type.as_str() == "bool" {
-            write!(o, "{t}{t}self.raw.{} != 0", m.orig_name, t=t)?;
+            write!(o, "self.raw.{} != 0", m.orig_name)?;
         } else if sig.convert_return && !m.is_ptr {
-            write!(o, "{t}{t}self.raw.{}", m.orig_name, t=t)?;
+            write!(o, "self.raw.{}", m.orig_name)?;
             write!(o, ".into()")?;
         } else if m.is_handle_type && m.is_ptr {
-            write!(o, "{t}{t}unsafe {{ &*(self.raw.{} as *const _) }}", m.orig_name, t=t)?;
+            write!(o, "unsafe {{ &*(self.raw.{} as *const _) }}", m.orig_name)?;
         } else if m.is_ptr {
             if sig.unsafe_to_set {
-                write!(o, "{t}{t}self.raw.{}", m.orig_name, t=t)?;
+                write!(o, "self.raw.{}", m.orig_name)?;
             // } else if sig.arg_is_slice {
 
             } else {
-                write!(o, "{t}{t}unsafe {{ &*(self.raw.{} as *const _) }}", m.orig_name, t=t)?;
+                write!(o, "unsafe {{ &*(self.raw.{} as *const _) }}", m.orig_name)?;
             }
         } else {
-            write!(o, "{t}{t}self.raw.{}", m.orig_name, t=t)?;
+            write!(o, "self.raw.{}", m.orig_name)?;
         }
+        
+        //end braces for Some( when returning Option<>
+        write_end_option_check(o, is_for_builder)?;
     }
 
 
@@ -1422,15 +1469,25 @@ fn write_get_mut_fn(o: &mut BufWriter<File>, s: &Struct, m: &Member, impl_type_p
     assert!(!m.is_ptr);
     assert!(m.array_len.is_none());
     assert!(sig.arg_is_repr_c);
-    let return_type = format!("&'a mut {}", &sig.arg_type);
+    let mut return_type = format!("&'a mut {}", &sig.arg_type);
+    if is_for_builder {
+        return_type = format!("Option<{}>", return_type);
+    }
+    
     let get_pre = if is_for_builder { "get_" } else { "" };
 
     writeln!(o, "{t}pub fn {}{}_mut<{}>(&'a mut self) -> {} {{", get_pre, sig.fn_name,
         sig.get_fn_type_params, return_type, t=t)?;
+        
+    //begin brackets for Option<> return type.  Also - return None if the value was not set.
+    write_begin_option_check(o, &s, &m, is_for_builder)?;
+        
+    write!(o, "unsafe {{ &mut *(&mut self.raw.{} as *mut  {}{} as *mut {}) }}", m.orig_name,
+        ORIG_PRE, m.orig_type, m.voodoo_type)?;
 
-    write!(o, "{t}{t}unsafe {{ &mut *(&mut self.raw.{} as *mut  {}{} as *mut {}) }}", m.orig_name,
-        ORIG_PRE, m.orig_type, m.voodoo_type, t=t)?;
-
+    //end brackets for Option<> return type
+    write_end_option_check(o, is_for_builder)?;
+        
     write!(o, "\n")?;
 
     write!(o, "{t}}}\n\n", t=t)?;
@@ -1438,24 +1495,7 @@ fn write_get_mut_fn(o: &mut BufWriter<File>, s: &Struct, m: &Member, impl_type_p
 }
 
 
-/// Writes struct and corresponding builder definitions to an output file
-/// which is overwritten if it exists.
-fn write_structs(structs: &HashMap<String,Struct>, struct_order: &[String]) -> io::Result<()> {
-    // let output_file_path = concat!(env!("CARGO_MANIFEST_DIR"), "/output/structs.rs");
-    let output_file_path = "/src/voodoo/src/structs.rs";
-
-    fs::create_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/output")).ok();
-
-    let output_file = OpenOptions::new()
-        .write(true)
-        .truncate(true)
-        .create(true)
-        .open(output_file_path)
-        .unwrap();
-
-    let mut output_write = BufWriter::new(output_file);
-    let o = &mut output_write;
-
+fn write_header(o: &mut BufWriter<File>) -> io::Result<()> {
     let t = INDENT;
     writeln!(o, "//! Structs.")?;
     writeln!(o, "//! ")?;
@@ -1480,208 +1520,332 @@ fn write_structs(structs: &HashMap<String,Struct>, struct_order: &[String]) -> i
     write!(o, "\n\n")?;
 
     writeln!(o, "")?;
+    Ok(())
+}
+
+fn get_struct_type_param(s: &Struct) -> &str {
+    if s.contains_ptr { "'s" } else { "" }
+}
+
+fn get_struct_type_param_block(s: &Struct) -> String {
+    let type_param = get_struct_type_param(s);
+    if !type_param.is_empty() {
+        format!("<{}>", type_param)
+    } else {
+        "".to_string()
+    }
+}
+
+fn get_bldr_type_param(s: &Struct) -> &str {
+    if s.contains_ptr { "'b" } else { "" }
+}
+
+fn get_bldr_type_param_block(s: &Struct) -> String {
+    let type_param = get_bldr_type_param(s);
+    if !type_param.is_empty() {
+        format!("<{}>", type_param)
+    } else {
+        "".to_string()
+    }
+}
+
+fn write_builder_bitfield(s: &Struct, o: &mut BufWriter<File>) -> io::Result<()> {
+    /* Example:
+    bitflags! {
+        #[derive(Default)]
+        struct Offset2dFlags: u32 {
+            const FLAG_X       = 0b00000001;
+            const FLAG_Y       = 0b00000010;
+        }
+    }   
+    */
+    
+    let t = INDENT;
+    
+    writeln!(o, "/// Bitflags for `{}`.", s.orig_name)?;
+    writeln!(o, "///")?;
+    writeln!(o, "/// {}", s.comment)?;
+    
+    writeln!(o, "bitflags! {{")?;
+        writeln!(o, "{t}#[derive(Default)]", t=t)?;
+        writeln!(o, "{t}pub struct {}Flags: u32 {{", s.voodoo_name, t=t)?; //we assume no more than 32 different flag values!!!
+        
+        //for each member that is not a structure, create a flag.
+        let mut bit = 1; //again - no more than 32 different flags.
+        for m in &s.members {
+            //write_set_fn(o, s, m, bldr_type_param, &bldr_type_param_block, &structs, true)?;
+            writeln!(o, "{t}{t}const FLAG_{}\t\t\t = {:#b};", m.orig_name.to_uppercase(), bit, t=t)?;
+            bit <<= 1;
+        }
+        writeln!(o, "{t}}}", t=t)?;
+    writeln!(o, "}}\n\n")?;
+    
+    
+    Ok(())
+}
+
+fn write_builder(s: &Struct, o: &mut BufWriter<File>) -> io::Result<()>  {    
+    let t = INDENT;
+    writeln!(o, "/// A builder for `{}`.", s.orig_name)?;
+    writeln!(o, "///")?;
+    writeln!(o, "/// {}", s.comment)?;
+    if is_experimental(&s.orig_name) {
+        writeln!(o, "#[cfg(feature = \"experimental\")]")?;
+    }
+    
+    let bldr_type_param_block = get_bldr_type_param_block(&s);
+    
+    writeln!(o, "#[derive(Debug, Clone, Default)]")?;
+    write!(o, "pub struct {}Builder", s.voodoo_name)?;
+    if s.contains_ptr { write!(o, "{}", bldr_type_param_block)?; }
+    writeln!(o, " {{")?;
+
+    // Raw:
+    writeln!(o, "{t}raw: {}{},", ORIG_PRE, s.orig_name, t=t)?;
+    // // Special fields:
+    // for (_, field) in &s.special_fields {
+    //     writeln!(o, "{t}{}: {},", field.name, field.ty_builder, t=t)?;
+    // }
+    // Phantom data:
+    if s.contains_ptr {
+        writeln!(o, "{t}_p: PhantomData<&'b ()>, ", t=t)?;
+    }
+    
+    // Bitmask:
+    writeln!(o, "{t}set_mask: {}Flags,", s.voodoo_name, t=t)?;
+    write!(o, "}}\n\n")?;
+    Ok(())
+}
+
+fn write_builder_impl(s: &Struct, structs: &HashMap<String,Struct>, o: &mut BufWriter<File>) -> io::Result<()> {
+    let t = INDENT;
+    if is_experimental(&s.orig_name) {
+        writeln!(o, "#[cfg(feature = \"experimental\")]")?;
+    }
+
+    let bldr_type_param_block = get_bldr_type_param_block(&s);
+    let bldr_type_param = get_bldr_type_param(&s);
+    
+    write!(o, "impl{} {}Builder{}", bldr_type_param_block, s.voodoo_name, bldr_type_param_block)?;
+    writeln!(o, " {{")?;
+    // NEW:
+    writeln!(o, "{t}pub fn new() -> {}Builder{} {{", s.voodoo_name, bldr_type_param_block, t=t)?;
+    writeln!(o, "{t}{t}{}Builder {{", s.voodoo_name, t=t)?;
+    // Raw:
+    writeln!(o, "{t}{t}{t}raw: {}{}::default(),", ORIG_PRE, s.orig_name, t=t)?;
+    // // Special fields:
+    // for (_, field) in &s.special_fields {
+    //     writeln!(o, "{t}{t}{t}{}: {},", field.name, field.default_val, t=t)?;
+    // }
+    // Phantom data:
+    if s.contains_ptr {
+        writeln!(o, "{t}{t}{t}_p: PhantomData,", t=t)?;
+    }
+    // set_mask init
+    writeln!(o, "{t}{t}{t}set_mask: {}Flags::default(),", s.voodoo_name, t=t)?;
+    
+    writeln!(o, "{t}{t}}}", t=t)?;
+    write!(o, "{t}}}\n\n", t=t)?;
+
+    // Write setter functions:
+    for m in &s.members {
+        write_set_fn(o, s, m, bldr_type_param, &bldr_type_param_block, &structs, true)?;
+    }
+
+    // Write getter functions:
+    for m in &s.members {
+        write_get_fn(o, s, m, bldr_type_param, &bldr_type_param_block, &structs, true)?;
+        write_get_mut_fn(o, s, m, bldr_type_param, &bldr_type_param_block, &structs, true)?;
+    }
+
+    // BUILD:
+    write!(o, "{t}pub fn build(self) -> {}{p}", s.voodoo_name, p=bldr_type_param_block, t=t)?;
+    writeln!(o," {{")?;
+    writeln!(o, "{t}{t}{} {{", s.voodoo_name, t=t)?;
+    // Raw:
+    writeln!(o, "{t}{t}{t}raw: self.raw,", t=t)?;
+    // // Special fields:
+    // for (_, field) in &s.special_fields {
+    //     writeln!(o, "{t}{t}{t}{fn}: self.{fn},", fn=field.name, t=t)?;
+    // }
+    // Phantom data:
+    if s.contains_ptr {
+        writeln!(o, "{t}{t}{t}_p: PhantomData,", t=t)?;
+    }
+    writeln!(o, "{t}{t}}}", t=t)?;
+    write!(o, "{t}}}\n", t=t)?;
+
+    write!(o, "}}\n\n\n")?;
+    Ok(())
+}
+
+fn write_struct(s: &Struct, o: &mut BufWriter<File>) -> io::Result<()> {
+    let t = INDENT;
+    writeln!(o, "/// A `{}`.", s.orig_name)?;
+    writeln!(o, "///")?;
+    writeln!(o, "/// {}", s.comment)?;
+    if is_experimental(&s.orig_name) {
+        writeln!(o, "#[cfg(feature = \"experimental\")]")?;
+    }
+    writeln!(o, "#[derive(Debug, Clone, Default)]")?;
+    if s.is_repr_c() {
+        writeln!(o, "#[repr(C)]")?;
+    }
+    write!(o, "pub struct {}", s.voodoo_name)?;
+    if s.contains_ptr { write!(o, "<'s>")?; }
+    writeln!(o, " {{")?;
+
+    // Raw:
+    writeln!(o, "{t}raw: {}{},", ORIG_PRE, s.orig_name, t=t)?;
+    
+    // // Special fields:
+    // for (_, field) in &s.special_fields {
+    //     writeln!(o, "{t}{}: {},", field.name, field.ty_struct, t=t)?;
+    // }
+    // Phantom data:
+    if s.contains_ptr {
+        writeln!(o, "{t}_p: PhantomData<&'s ()>,", t=t)?;
+    }
+
+    write!(o, "}}\n\n")?;
+    Ok(())
+}
+
+fn write_struct_impl(s: &Struct, structs: &HashMap<String,Struct>, o: &mut BufWriter<File>) -> io::Result<()> {
+    let t = INDENT;
+    if is_experimental(&s.orig_name) {
+        writeln!(o, "#[cfg(feature = \"experimental\")]")?;
+    }
+    
+    let struct_type_param_block = get_struct_type_param_block(&s);
+    let bldr_type_param_block = get_bldr_type_param_block(&s);
+    let struct_type_param = get_struct_type_param(&s);
+    
+    write!(o, "impl{} {}{}", struct_type_param_block, s.voodoo_name, struct_type_param_block)?;
+    writeln!(o, " {{")?;
+
+    write!(o, "{t}pub fn builder{tp}() -> {}Builder{tp}", s.voodoo_name, tp=bldr_type_param_block, t=t)?;
+    writeln!(o, " {{")?;
+    writeln!(o, "{t}{t}{}Builder::new()", s.voodoo_name, t=t)?;
+    write!(o, "{t}}}\n\n", t=t)?;
+
+    // `from_raw`:
+    writeln!(o, "{t}pub unsafe fn from_raw(raw: {}{}) -> {}{} {{", ORIG_PRE, s.orig_name,
+        s.voodoo_name, struct_type_param_block, t=t)?;
+    write!(o, "{t}{t}{} {{ raw, ", s.voodoo_name, t=t)?;
+    // for (_, field) in &s.special_fields {
+    //     write!(o, "{}: {}, ", field.name, field.default_val)?;
+    // }
+    if s.contains_ptr {
+        write!(o, "_p: PhantomData ")?;
+    }
+    writeln!(o, "}}")?;
+    writeln!(o, "{t}}}", t=t)?;
+    write!(o, "\n")?;
+
+    // Write getter functions:
+    for m in &s.members {
+        write_get_fn(o, s, m, struct_type_param, &struct_type_param_block, structs, false)?;
+        write_get_mut_fn(o, s, m, struct_type_param, &struct_type_param_block, structs, false)?;
+    }
+
+    // Write setter function:
+    for m in &s.members {
+        write_set_fn(o, s, m, struct_type_param, &struct_type_param_block, structs, false)?;
+    }
+
+    // `as_raw`:
+    writeln!(o, "{t}pub fn as_raw(&self) -> &{}{} {{", ORIG_PRE, s.orig_name, t=t)?;
+    writeln!(o, "{t}{t}&self.raw", t=t)?;
+    writeln!(o, "{t}}}", t=t)?;
+
+    write!(o, "}}\n\n")?;
+    Ok(())
+}
+
+fn write_from_into_struct(s: &Struct, o: &mut BufWriter<File>) -> io::Result<()> {
+    let t = INDENT;
+    if is_experimental(&s.orig_name) {
+        writeln!(o, "#[cfg(feature = \"experimental\")]")?;
+    }
+    
+    let struct_type_param_block = get_struct_type_param_block(&s);
+    
+    write!(o, "impl{} From<{}{}> for {}{}", struct_type_param_block, s.voodoo_name, struct_type_param_block,
+        ORIG_PRE, s.orig_name,)?;
+    writeln!(o, " {{")?;
+    writeln!(o, "{t}fn from(f: {}{}) -> {}{} {{", s.voodoo_name, struct_type_param_block,
+        ORIG_PRE, s.orig_name, t=t)?;
+    writeln!(o, "{t}{t}f.raw", t=t)?;
+    writeln!(o, "{t}}}", t=t)?;
+    write!(o, "}}\n\n")?;
+    write!(o, "\n")?;
+
+    // if is_experimental(&s.orig_name) {
+    //     writeln!(o, "#[cfg(feature = \"experimental\")]")?;
+    // }
+    // write!(o, "impl{} From<{}{}> for {}{}", struct_type_param_block, ORIG_PRE, s.orig_name,
+    //     s.voodoo_name, struct_type_param_block)?;
+    // writeln!(o, " {{")?;
+    // writeln!(o, "{t}fn from(f: {}{}) -> {}{} {{", ORIG_PRE, s.orig_name,
+    //     s.voodoo_name, struct_type_param_block, t=t)?;
+    // write!(o, "{t}{t}{} {{ raw: f, ", s.voodoo_name, t=t)?;
+    // // for (_, field) in &s.special_fields {
+    // //     write!(o, "{}: {}, ", field.name, field.default_val)?;
+    // // }
+    // if s.contains_ptr {
+    //     write!(o, "_p: PhantomData ")?;
+    // }
+    // writeln!(o, "}}")?;
+    // writeln!(o, "{t}}}", t=t)?;
+
+    // write!(o, "}}\n\n\n")?;
+    Ok(())
+}
+
+/// Writes struct and corresponding builder definitions to an output file
+/// which is overwritten if it exists.
+fn write_structs(structs: &HashMap<String,Struct>, struct_order: &[String]) -> io::Result<()> {
+    //let output_file_path = concat!(env!("CARGO_MANIFEST_DIR"), "\\output\\structs.rs");
+    let output_file_path = "../src/structs.rs";
+    
+    if PRINT2 == true {
+        println!("Output File: {:?}", output_file_path);
+    }
+
+    fs::create_dir(concat!(env!("CARGO_MANIFEST_DIR"), "\\output")).ok();
+
+    let output_file = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .create(true)
+        .open(output_file_path)?;
+        
+    let mut output_write = BufWriter::new(output_file);
+
+    write_header(&mut output_write)?;
 
     for s_key in struct_order {
         let s = structs.get(s_key).unwrap();
         if struct_is_excluded(&s.orig_name) { continue; }
-
+        
         // ################## STRUCT ####################
-        writeln!(o, "/// A `{}`.", s.orig_name)?;
-        writeln!(o, "///")?;
-        writeln!(o, "/// {}", s.comment)?;
-        if is_experimental(&s.orig_name) {
-            writeln!(o, "#[cfg(feature = \"experimental\")]")?;
-        }
-        writeln!(o, "#[derive(Debug, Clone, Default)]")?;
-        if s.is_repr_c() {
-            writeln!(o, "#[repr(C)]")?;
-        }
-        write!(o, "pub struct {}", s.voodoo_name)?;
-        if s.contains_ptr { write!(o, "<'s>")?; }
-        writeln!(o, " {{")?;
-
-        // Raw:
-        writeln!(o, "{t}raw: {}{},", ORIG_PRE, s.orig_name, t=t)?;
-        // // Special fields:
-        // for (_, field) in &s.special_fields {
-        //     writeln!(o, "{t}{}: {},", field.name, field.ty_struct, t=t)?;
-        // }
-        // Phantom data:
-        if s.contains_ptr {
-            writeln!(o, "{t}_p: PhantomData<&'s ()>,", t=t)?;
-        }
-
-        write!(o, "}}\n\n")?;
+        write_struct(&s, &mut output_write)?;
 
         // ################# STRUCT IMPL #################
-        if is_experimental(&s.orig_name) {
-            writeln!(o, "#[cfg(feature = \"experimental\")]")?;
-        }
-
-        let struct_type_param = if s.contains_ptr { "'s" } else { "" };
-        let struct_type_param_block = if !struct_type_param.is_empty() {
-            format!("<{}>", struct_type_param)
-        } else {
-            "".to_string()
-        };
-
-        let bldr_type_param = if s.contains_ptr { "'b" } else { "" };
-        let bldr_type_param_block = if !bldr_type_param.is_empty() {
-            format!("<{}>", bldr_type_param)
-        } else {
-            "".to_string()
-        };
-        write!(o, "impl{} {}{}", struct_type_param_block, s.voodoo_name, struct_type_param_block)?;
-        writeln!(o, " {{")?;
-
-        write!(o, "{t}pub fn builder{tp}() -> {}Builder{tp}", s.voodoo_name, tp=bldr_type_param_block, t=t)?;
-        writeln!(o, " {{")?;
-        writeln!(o, "{t}{t}{}Builder::new()", s.voodoo_name, t=t)?;
-        write!(o, "{t}}}\n\n", t=t)?;
-
-        // `from_raw`:
-        writeln!(o, "{t}pub unsafe fn from_raw(raw: {}{}) -> {}{} {{", ORIG_PRE, s.orig_name,
-            s.voodoo_name, struct_type_param_block, t=t)?;
-        write!(o, "{t}{t}{} {{ raw, ", s.voodoo_name, t=t)?;
-        // for (_, field) in &s.special_fields {
-        //     write!(o, "{}: {}, ", field.name, field.default_val)?;
-        // }
-        if s.contains_ptr {
-            write!(o, "_p: PhantomData ")?;
-        }
-        writeln!(o, "}}")?;
-        writeln!(o, "{t}}}", t=t)?;
-        write!(o, "\n")?;
-
-        // Write getter functions:
-        for m in &s.members {
-            write_get_fn(o, s, m, struct_type_param, &struct_type_param_block, structs, false)?;
-            write_get_mut_fn(o, s, m, struct_type_param, &struct_type_param_block, structs, false)?;
-        }
-
-        // Write setter function:
-        for m in &s.members {
-            write_set_fn(o, s, m, struct_type_param, &struct_type_param_block, structs, false)?;
-        }
-
-        // `as_raw`:
-        writeln!(o, "{t}pub fn as_raw(&self) -> &{}{} {{", ORIG_PRE, s.orig_name, t=t)?;
-        writeln!(o, "{t}{t}&self.raw", t=t)?;
-        writeln!(o, "{t}}}", t=t)?;
-
-        write!(o, "}}\n\n")?;
+        write_struct_impl(&s, &structs, &mut output_write)?;
 
         // ################ IMPL FROM/INTO STRUCT ################
+        write_from_into_struct(&s, &mut output_write)?;
 
-        if is_experimental(&s.orig_name) {
-            writeln!(o, "#[cfg(feature = \"experimental\")]")?;
-        }
-        write!(o, "impl{} From<{}{}> for {}{}", struct_type_param_block, s.voodoo_name, struct_type_param_block,
-            ORIG_PRE, s.orig_name,)?;
-        writeln!(o, " {{")?;
-        writeln!(o, "{t}fn from(f: {}{}) -> {}{} {{", s.voodoo_name, struct_type_param_block,
-            ORIG_PRE, s.orig_name, t=t)?;
-        writeln!(o, "{t}{t}f.raw", t=t)?;
-        writeln!(o, "{t}}}", t=t)?;
-        write!(o, "}}\n\n")?;
-        write!(o, "\n")?;
-
-        // if is_experimental(&s.orig_name) {
-        //     writeln!(o, "#[cfg(feature = \"experimental\")]")?;
-        // }
-        // write!(o, "impl{} From<{}{}> for {}{}", struct_type_param_block, ORIG_PRE, s.orig_name,
-        //     s.voodoo_name, struct_type_param_block)?;
-        // writeln!(o, " {{")?;
-        // writeln!(o, "{t}fn from(f: {}{}) -> {}{} {{", ORIG_PRE, s.orig_name,
-        //     s.voodoo_name, struct_type_param_block, t=t)?;
-        // write!(o, "{t}{t}{} {{ raw: f, ", s.voodoo_name, t=t)?;
-        // // for (_, field) in &s.special_fields {
-        // //     write!(o, "{}: {}, ", field.name, field.default_val)?;
-        // // }
-        // if s.contains_ptr {
-        //     write!(o, "_p: PhantomData ")?;
-        // }
-        // writeln!(o, "}}")?;
-        // writeln!(o, "{t}}}", t=t)?;
-
-        // write!(o, "}}\n\n\n")?;
-
+        // ################ BUILDER BITFIELD ################
+        write_builder_bitfield(&s, &mut output_write)?;
+        
         // ################ BUILDER ################
-        writeln!(o, "/// A builder for `{}`.", s.orig_name)?;
-        writeln!(o, "///")?;
-        writeln!(o, "/// {}", s.comment)?;
-        if is_experimental(&s.orig_name) {
-            writeln!(o, "#[cfg(feature = \"experimental\")]")?;
-        }
-        writeln!(o, "#[derive(Debug, Clone, Default)]")?;
-        write!(o, "pub struct {}Builder", s.voodoo_name)?;
-        if s.contains_ptr { write!(o, "{}", bldr_type_param_block)?; }
-        writeln!(o, " {{")?;
-
-        // Raw:
-        writeln!(o, "{t}raw: {}{},", ORIG_PRE, s.orig_name, t=t)?;
-        // // Special fields:
-        // for (_, field) in &s.special_fields {
-        //     writeln!(o, "{t}{}: {},", field.name, field.ty_builder, t=t)?;
-        // }
-        // Phantom data:
-        if s.contains_ptr {
-            writeln!(o, "{t}_p: PhantomData<&'b ()>, ", t=t)?;
-        }
-        write!(o, "}}\n\n")?;
-
+        write_builder(&s, &mut output_write)?;
+        
         // ############## BUILDER IMPL ##############
-        if is_experimental(&s.orig_name) {
-            writeln!(o, "#[cfg(feature = \"experimental\")]")?;
-        }
-
-        write!(o, "impl{} {}Builder{}", bldr_type_param_block, s.voodoo_name, bldr_type_param_block)?;
-        writeln!(o, " {{")?;
-        // NEW:
-        writeln!(o, "{t}pub fn new() -> {}Builder{} {{", s.voodoo_name, bldr_type_param_block, t=t)?;
-        writeln!(o, "{t}{t}{}Builder {{", s.voodoo_name, t=t)?;
-        // Raw:
-        writeln!(o, "{t}{t}{t}raw: {}{}::default(),", ORIG_PRE, s.orig_name, t=t)?;
-        // // Special fields:
-        // for (_, field) in &s.special_fields {
-        //     writeln!(o, "{t}{t}{t}{}: {},", field.name, field.default_val, t=t)?;
-        // }
-        // Phantom data:
-        if s.contains_ptr {
-            writeln!(o, "{t}{t}{t}_p: PhantomData,", t=t)?;
-        }
-        writeln!(o, "{t}{t}}}", t=t)?;
-        write!(o, "{t}}}\n\n", t=t)?;
-
-        // Write setter functions:
-        for m in &s.members {
-            write_set_fn(o, s, m, bldr_type_param, &bldr_type_param_block, &structs, true)?;
-        }
-
-        // Write getter functions:
-        for m in &s.members {
-            write_get_fn(o, s, m, bldr_type_param, &bldr_type_param_block, &structs, true)?;
-            write_get_mut_fn(o, s, m, bldr_type_param, &bldr_type_param_block, &structs, true)?;
-        }
-
-        // BUILD:
-        write!(o, "{t}pub fn build(self) -> {}{p}", s.voodoo_name, p=bldr_type_param_block, t=t)?;
-        writeln!(o," {{")?;
-        writeln!(o, "{t}{t}{} {{", s.voodoo_name, t=t)?;
-        // Raw:
-        writeln!(o, "{t}{t}{t}raw: self.raw,", t=t)?;
-        // // Special fields:
-        // for (_, field) in &s.special_fields {
-        //     writeln!(o, "{t}{t}{t}{fn}: self.{fn},", fn=field.name, t=t)?;
-        // }
-        // Phantom data:
-        if s.contains_ptr {
-            writeln!(o, "{t}{t}{t}_p: PhantomData,", t=t)?;
-        }
-        writeln!(o, "{t}{t}}}", t=t)?;
-        write!(o, "{t}}}\n", t=t)?;
-
-        write!(o, "}}\n\n\n")?;
+        write_builder_impl(&s, &structs, &mut output_write)?;
     }
 
     Ok(())
