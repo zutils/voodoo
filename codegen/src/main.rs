@@ -7,7 +7,7 @@
 extern crate xml;
 
 use std::mem;
-use std::fs::{self, File, OpenOptions};
+use std::fs::{File, OpenOptions};
 use std::io::{self, Write, BufReader, BufWriter};
 use std::collections::HashMap;
 use xml::reader::{EventReader, XmlEvent};
@@ -640,7 +640,7 @@ fn indent(size: usize) -> String {
 
 /// Parses a source XML API spec. and pulls out (currently only) structs.
 fn parse_structs() -> (HashMap<String, Struct>, Vec<String>) {
-    let file = File::open(concat!(env!("CARGO_MANIFEST_DIR"), "/gen_src/vk.xml")).unwrap();
+    let file = File::open("./gen_src/vk.xml").unwrap();
     let reader = BufReader::new(file);
     let parser = EventReader::new(reader);
 
@@ -1156,6 +1156,10 @@ fn write_set_fn(o: &mut BufWriter<File>, s: &Struct, m: &Member, impl_type_param
                 writeln!(o, "{t}{t}{x}self.raw.{c} = {f}.len() as _;", c=count_orig_name, f=sig.fn_name,
                     t=t, x=extra_indent)?;
             }
+
+            if is_for_builder {
+                writeln!(o, "{t}{t}self.set_mask |= {}Flags::FLAG_{};", s.voodoo_name, count_orig_name.to_uppercase(), t=t)?;
+            }
         }
         Ok(())
     };
@@ -1332,7 +1336,7 @@ fn write_get_fn(o: &mut BufWriter<File>, s: &Struct, m: &Member, impl_type_param
 
     if sig.arg_is_struct {
         if m.is_ptr {
-            //pointers can be handled with is_null(). Only write test for builders. Begin Option<> Check.
+            // pointers can be handled with is_null(). Only write test for builders. Begin Option<> Check.
             if is_for_builder {
                 write!(o, "{t}{t}if self.raw.{}.is_null() {{ return None }}\n{t}{t}Some( ", m.orig_name, t=t)?;
             } else {
@@ -1366,7 +1370,7 @@ fn write_get_fn(o: &mut BufWriter<File>, s: &Struct, m: &Member, impl_type_param
             
             write_end_option_check(o, is_for_builder)?;
             
-        } else { //non-ptr type
+        } else { // non-ptr type
             write_begin_option_check(o, &s, &m, is_for_builder)?;
            
             if let Some(ref len) = m.array_len {
@@ -1387,7 +1391,7 @@ fn write_get_fn(o: &mut BufWriter<File>, s: &Struct, m: &Member, impl_type_param
         }
     } else { //non-struct type
         // write!(o, "{t}{t}self.raw.{}", m.orig_name, t=t)?;
-        //handle non-set value. Also, begin braces for Some( when returning Option<>
+        // handle non-set value. Also, begin braces for Some( when returning Option<>
         write_begin_option_check(o, &s, &m, is_for_builder)?;
         
         if let Some(ref count_orig_name) = m.ptr_count_member_orig_name {
@@ -1479,13 +1483,13 @@ fn write_get_mut_fn(o: &mut BufWriter<File>, s: &Struct, m: &Member, impl_type_p
     writeln!(o, "{t}pub fn {}{}_mut<{}>(&'a mut self) -> {} {{", get_pre, sig.fn_name,
         sig.get_fn_type_params, return_type, t=t)?;
         
-    //begin brackets for Option<> return type.  Also - return None if the value was not set.
+    // begin brackets for Option<> return type.  Also - return None if the value was not set.
     write_begin_option_check(o, &s, &m, is_for_builder)?;
         
     write!(o, "unsafe {{ &mut *(&mut self.raw.{} as *mut  {}{} as *mut {}) }}", m.orig_name,
         ORIG_PRE, m.orig_type, m.voodoo_type)?;
 
-    //end brackets for Option<> return type
+    // end brackets for Option<> return type
     write_end_option_check(o, is_for_builder)?;
         
     write!(o, "\n")?;
@@ -1570,10 +1574,10 @@ fn write_builder_bitfield(s: &Struct, o: &mut BufWriter<File>) -> io::Result<()>
         writeln!(o, "{t}#[derive(Default)]", t=t)?;
         writeln!(o, "{t}pub struct {}Flags: u32 {{", s.voodoo_name, t=t)?; //we assume no more than 32 different flag values!!!
         
-        //for each member that is not a structure, create a flag.
-        let mut bit = 1; //again - no more than 32 different flags.
+        // for each member that is not a structure, create a flag.
+        let mut bit = 1; // again - no more than 32 different flags.
         for m in &s.members {
-            //write_set_fn(o, s, m, bldr_type_param, &bldr_type_param_block, &structs, true)?;
+            // write_set_fn(o, s, m, bldr_type_param, &bldr_type_param_block, &structs, true)?;
             writeln!(o, "{t}{t}const FLAG_{}\t\t\t = {:#b};", m.orig_name.to_uppercase(), bit, t=t)?;
             bit <<= 1;
         }
@@ -1806,14 +1810,14 @@ fn write_from_into_struct(s: &Struct, o: &mut BufWriter<File>) -> io::Result<()>
 /// Writes struct and corresponding builder definitions to an output file
 /// which is overwritten if it exists.
 fn write_structs(structs: &HashMap<String,Struct>, struct_order: &[String]) -> io::Result<()> {
-    //let output_file_path = concat!(env!("CARGO_MANIFEST_DIR"), "\\output\\structs.rs");
+    // let output_file_path = concat!(env!("CARGO_MANIFEST_DIR"), "\\output\\structs.rs");
     let output_file_path = "../src/structs.rs";
     
     if PRINT2 == true {
         println!("Output File: {:?}", output_file_path);
     }
 
-    fs::create_dir(concat!(env!("CARGO_MANIFEST_DIR"), "\\output")).ok();
+    //fs::create_dir(concat!(env!("CARGO_MANIFEST_DIR"), "\\output")).ok();
 
     let output_file = OpenOptions::new()
         .write(true)

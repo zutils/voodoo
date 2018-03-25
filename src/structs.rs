@@ -2101,6 +2101,7 @@ impl<'b> DeviceQueueCreateInfoBuilder<'b> {
         assert!(self.raw.queueCount == 0 || self.raw.queueCount == queue_priorities.len() as _, 
             "count inconsistency found when specifying `DeviceQueueCreateInfo::queue_priorities`.");
         self.raw.queueCount = queue_priorities.len() as _;
+        self.set_mask |= DeviceQueueCreateInfoFlags::FLAG_QUEUECOUNT;
         self.raw.pQueuePriorities = queue_priorities.as_ptr() as *const f32 as *const _;
         self.set_mask |= DeviceQueueCreateInfoFlags::FLAG_PQUEUEPRIORITIES;
         self
@@ -2285,6 +2286,7 @@ impl<'b> DeviceCreateInfoBuilder<'b> {
         assert!(self.raw.queueCreateInfoCount == 0 || self.raw.queueCreateInfoCount == queue_create_infos.len() as _, 
             "count inconsistency found when specifying `DeviceCreateInfo::queue_create_infos`.");
         self.raw.queueCreateInfoCount = queue_create_infos.len() as _;
+        self.set_mask |= DeviceCreateInfoFlags::FLAG_QUEUECREATEINFOCOUNT;
         self.raw.pQueueCreateInfos = queue_create_infos.as_ptr() as *const vks::VkDeviceQueueCreateInfo;
         self
     }
@@ -2294,6 +2296,7 @@ impl<'b> DeviceCreateInfoBuilder<'b> {
         assert!(self.raw.enabledLayerCount == 0 || self.raw.enabledLayerCount == enabled_layer_names.len() as _, 
             "count inconsistency found when specifying `DeviceCreateInfo::enabled_layer_names`.");
         self.raw.enabledLayerCount = enabled_layer_names.len() as _;
+        self.set_mask |= DeviceCreateInfoFlags::FLAG_ENABLEDLAYERCOUNT;
         self.raw.ppEnabledLayerNames = enabled_layer_names.as_ptr();
         self.set_mask |= DeviceCreateInfoFlags::FLAG_PPENABLEDLAYERNAMES;
         self
@@ -2304,6 +2307,7 @@ impl<'b> DeviceCreateInfoBuilder<'b> {
         assert!(self.raw.enabledExtensionCount == 0 || self.raw.enabledExtensionCount == enabled_extension_names.len() as _, 
             "count inconsistency found when specifying `DeviceCreateInfo::enabled_extension_names`.");
         self.raw.enabledExtensionCount = enabled_extension_names.len() as _;
+        self.set_mask |= DeviceCreateInfoFlags::FLAG_ENABLEDEXTENSIONCOUNT;
         self.raw.ppEnabledExtensionNames = enabled_extension_names.as_ptr();
         self.set_mask |= DeviceCreateInfoFlags::FLAG_PPENABLEDEXTENSIONNAMES;
         self
@@ -2496,6 +2500,7 @@ impl<'b> InstanceCreateInfoBuilder<'b> {
         assert!(self.raw.enabledLayerCount == 0 || self.raw.enabledLayerCount == enabled_layer_names.len() as _, 
             "count inconsistency found when specifying `InstanceCreateInfo::enabled_layer_names`.");
         self.raw.enabledLayerCount = enabled_layer_names.len() as _;
+        self.set_mask |= InstanceCreateInfoFlags::FLAG_ENABLEDLAYERCOUNT;
         self.raw.ppEnabledLayerNames = enabled_layer_names.as_ptr();
         self.set_mask |= InstanceCreateInfoFlags::FLAG_PPENABLEDLAYERNAMES;
         self
@@ -2506,6 +2511,7 @@ impl<'b> InstanceCreateInfoBuilder<'b> {
         assert!(self.raw.enabledExtensionCount == 0 || self.raw.enabledExtensionCount == enabled_extension_names.len() as _, 
             "count inconsistency found when specifying `InstanceCreateInfo::enabled_extension_names`.");
         self.raw.enabledExtensionCount = enabled_extension_names.len() as _;
+        self.set_mask |= InstanceCreateInfoFlags::FLAG_ENABLEDEXTENSIONCOUNT;
         self.raw.ppEnabledExtensionNames = enabled_extension_names.as_ptr();
         self.set_mask |= InstanceCreateInfoFlags::FLAG_PPENABLEDEXTENSIONNAMES;
         self
@@ -4990,6 +4996,7 @@ impl<'b> BufferCreateInfoBuilder<'b> {
         assert!(self.raw.queueFamilyIndexCount == 0 || self.raw.queueFamilyIndexCount == queue_family_indices.len() as _, 
             "count inconsistency found when specifying `BufferCreateInfo::queue_family_indices`.");
         self.raw.queueFamilyIndexCount = queue_family_indices.len() as _;
+        self.set_mask |= BufferCreateInfoFlags::FLAG_QUEUEFAMILYINDEXCOUNT;
         self.raw.pQueueFamilyIndices = queue_family_indices.as_ptr() as *const u32 as *const _;
         self.set_mask |= BufferCreateInfoFlags::FLAG_PQUEUEFAMILYINDICES;
         self
@@ -6567,6 +6574,7 @@ impl<'b> ImageCreateInfoBuilder<'b> {
         assert!(self.raw.queueFamilyIndexCount == 0 || self.raw.queueFamilyIndexCount == queue_family_indices.len() as _, 
             "count inconsistency found when specifying `ImageCreateInfo::queue_family_indices`.");
         self.raw.queueFamilyIndexCount = queue_family_indices.len() as _;
+        self.set_mask |= ImageCreateInfoFlags::FLAG_QUEUEFAMILYINDEXCOUNT;
         self.raw.pQueueFamilyIndices = queue_family_indices.as_ptr() as *const u32 as *const _;
         self.set_mask |= ImageCreateInfoFlags::FLAG_PQUEUEFAMILYINDICES;
         self
@@ -7663,6 +7671,7 @@ impl<'b> SparseBufferMemoryBindInfoBuilder<'b> {
         assert!(self.raw.bindCount == 0 || self.raw.bindCount == binds.len() as _, 
             "count inconsistency found when specifying `SparseBufferMemoryBindInfo::binds`.");
         self.raw.bindCount = binds.len() as _;
+        self.set_mask |= SparseBufferMemoryBindInfoFlags::FLAG_BINDCOUNT;
         self.raw.pBinds = binds.as_ptr() as *const vks::VkSparseMemoryBind;
         self
     }
@@ -7782,6 +7791,7 @@ impl<'b> SparseImageOpaqueMemoryBindInfoBuilder<'b> {
         assert!(self.raw.bindCount == 0 || self.raw.bindCount == binds.len() as _, 
             "count inconsistency found when specifying `SparseImageOpaqueMemoryBindInfo::binds`.");
         self.raw.bindCount = binds.len() as _;
+        self.set_mask |= SparseImageOpaqueMemoryBindInfoFlags::FLAG_BINDCOUNT;
         self.raw.pBinds = binds.as_ptr() as *const vks::VkSparseMemoryBind;
         self
     }
@@ -7901,6 +7911,7 @@ impl<'b> SparseImageMemoryBindInfoBuilder<'b> {
         assert!(self.raw.bindCount == 0 || self.raw.bindCount == binds.len() as _, 
             "count inconsistency found when specifying `SparseImageMemoryBindInfo::binds`.");
         self.raw.bindCount = binds.len() as _;
+        self.set_mask |= SparseImageMemoryBindInfoFlags::FLAG_BINDCOUNT;
         self.raw.pBinds = binds.as_ptr() as *const vks::VkSparseImageMemoryBind;
         self
     }
@@ -8075,6 +8086,7 @@ impl<'b> BindSparseInfoBuilder<'b> {
         assert!(self.raw.waitSemaphoreCount == 0 || self.raw.waitSemaphoreCount == wait_semaphores.len() as _, 
             "count inconsistency found when specifying `BindSparseInfo::wait_semaphores`.");
         self.raw.waitSemaphoreCount = wait_semaphores.len() as _;
+        self.set_mask |= BindSparseInfoFlags::FLAG_WAITSEMAPHORECOUNT;
         self.raw.pWaitSemaphores = wait_semaphores.as_ptr() as *const vks::VkSemaphore;
         self.set_mask |= BindSparseInfoFlags::FLAG_PWAITSEMAPHORES;
         self
@@ -8085,6 +8097,7 @@ impl<'b> BindSparseInfoBuilder<'b> {
         assert!(self.raw.bufferBindCount == 0 || self.raw.bufferBindCount == buffer_binds.len() as _, 
             "count inconsistency found when specifying `BindSparseInfo::buffer_binds`.");
         self.raw.bufferBindCount = buffer_binds.len() as _;
+        self.set_mask |= BindSparseInfoFlags::FLAG_BUFFERBINDCOUNT;
         self.raw.pBufferBinds = buffer_binds.as_ptr() as *const vks::VkSparseBufferMemoryBindInfo;
         self
     }
@@ -8094,6 +8107,7 @@ impl<'b> BindSparseInfoBuilder<'b> {
         assert!(self.raw.imageOpaqueBindCount == 0 || self.raw.imageOpaqueBindCount == image_opaque_binds.len() as _, 
             "count inconsistency found when specifying `BindSparseInfo::image_opaque_binds`.");
         self.raw.imageOpaqueBindCount = image_opaque_binds.len() as _;
+        self.set_mask |= BindSparseInfoFlags::FLAG_IMAGEOPAQUEBINDCOUNT;
         self.raw.pImageOpaqueBinds = image_opaque_binds.as_ptr() as *const vks::VkSparseImageOpaqueMemoryBindInfo;
         self
     }
@@ -8103,6 +8117,7 @@ impl<'b> BindSparseInfoBuilder<'b> {
         assert!(self.raw.imageBindCount == 0 || self.raw.imageBindCount == image_binds.len() as _, 
             "count inconsistency found when specifying `BindSparseInfo::image_binds`.");
         self.raw.imageBindCount = image_binds.len() as _;
+        self.set_mask |= BindSparseInfoFlags::FLAG_IMAGEBINDCOUNT;
         self.raw.pImageBinds = image_binds.as_ptr() as *const vks::VkSparseImageMemoryBindInfo;
         self
     }
@@ -8112,6 +8127,7 @@ impl<'b> BindSparseInfoBuilder<'b> {
         assert!(self.raw.signalSemaphoreCount == 0 || self.raw.signalSemaphoreCount == signal_semaphores.len() as _, 
             "count inconsistency found when specifying `BindSparseInfo::signal_semaphores`.");
         self.raw.signalSemaphoreCount = signal_semaphores.len() as _;
+        self.set_mask |= BindSparseInfoFlags::FLAG_SIGNALSEMAPHORECOUNT;
         self.raw.pSignalSemaphores = signal_semaphores.as_ptr() as *const vks::VkSemaphore;
         self.set_mask |= BindSparseInfoFlags::FLAG_PSIGNALSEMAPHORES;
         self
@@ -9058,6 +9074,7 @@ impl<'b> ShaderModuleCreateInfoBuilder<'b> {
     pub fn code<'m, 'a>(mut self, code: &'a [u32]) -> ShaderModuleCreateInfoBuilder<'b>
             where 'a: 'b {
         self.raw.codeSize = code.len() * 4;
+        self.set_mask |= ShaderModuleCreateInfoFlags::FLAG_CODESIZE;
         self.raw.pCode = code.as_ptr() as *const u32 as *const _;
         self.set_mask |= ShaderModuleCreateInfoFlags::FLAG_PCODE;
         self
@@ -9372,6 +9389,7 @@ impl<'b> DescriptorSetLayoutCreateInfoBuilder<'b> {
         assert!(self.raw.bindingCount == 0 || self.raw.bindingCount == bindings.len() as _, 
             "count inconsistency found when specifying `DescriptorSetLayoutCreateInfo::bindings`.");
         self.raw.bindingCount = bindings.len() as _;
+        self.set_mask |= DescriptorSetLayoutCreateInfoFlags::FLAG_BINDINGCOUNT;
         self.raw.pBindings = bindings.as_ptr() as *const vks::VkDescriptorSetLayoutBinding;
         self
     }
@@ -9632,6 +9650,7 @@ impl<'b> DescriptorPoolCreateInfoBuilder<'b> {
         assert!(self.raw.poolSizeCount == 0 || self.raw.poolSizeCount == pool_sizes.len() as _, 
             "count inconsistency found when specifying `DescriptorPoolCreateInfo::pool_sizes`.");
         self.raw.poolSizeCount = pool_sizes.len() as _;
+        self.set_mask |= DescriptorPoolCreateInfoFlags::FLAG_POOLSIZECOUNT;
         self.raw.pPoolSizes = pool_sizes.as_ptr() as *const vks::VkDescriptorPoolSize;
         self
     }
@@ -9778,6 +9797,7 @@ impl<'b> DescriptorSetAllocateInfoBuilder<'b> {
         assert!(self.raw.descriptorSetCount == 0 || self.raw.descriptorSetCount == set_layouts.len() as _, 
             "count inconsistency found when specifying `DescriptorSetAllocateInfo::set_layouts`.");
         self.raw.descriptorSetCount = set_layouts.len() as _;
+        self.set_mask |= DescriptorSetAllocateInfoFlags::FLAG_DESCRIPTORSETCOUNT;
         self.raw.pSetLayouts = set_layouts.as_ptr() as *const vks::VkDescriptorSetLayout;
         self.set_mask |= DescriptorSetAllocateInfoFlags::FLAG_PSETLAYOUTS;
         self
@@ -10029,6 +10049,7 @@ impl<'b> SpecializationInfoBuilder<'b> {
         assert!(self.raw.mapEntryCount == 0 || self.raw.mapEntryCount == map_entries.len() as _, 
             "count inconsistency found when specifying `SpecializationInfo::map_entries`.");
         self.raw.mapEntryCount = map_entries.len() as _;
+        self.set_mask |= SpecializationInfoFlags::FLAG_MAPENTRYCOUNT;
         self.raw.pMapEntries = map_entries.as_ptr() as *const vks::VkSpecializationMapEntry;
         self
     }
@@ -10868,6 +10889,7 @@ impl<'b> PipelineVertexInputStateCreateInfoBuilder<'b> {
         assert!(self.raw.vertexBindingDescriptionCount == 0 || self.raw.vertexBindingDescriptionCount == vertex_binding_descriptions.len() as _, 
             "count inconsistency found when specifying `PipelineVertexInputStateCreateInfo::vertex_binding_descriptions`.");
         self.raw.vertexBindingDescriptionCount = vertex_binding_descriptions.len() as _;
+        self.set_mask |= PipelineVertexInputStateCreateInfoFlags::FLAG_VERTEXBINDINGDESCRIPTIONCOUNT;
         self.raw.pVertexBindingDescriptions = vertex_binding_descriptions.as_ptr() as *const vks::VkVertexInputBindingDescription;
         self
     }
@@ -10877,6 +10899,7 @@ impl<'b> PipelineVertexInputStateCreateInfoBuilder<'b> {
         assert!(self.raw.vertexAttributeDescriptionCount == 0 || self.raw.vertexAttributeDescriptionCount == vertex_attribute_descriptions.len() as _, 
             "count inconsistency found when specifying `PipelineVertexInputStateCreateInfo::vertex_attribute_descriptions`.");
         self.raw.vertexAttributeDescriptionCount = vertex_attribute_descriptions.len() as _;
+        self.set_mask |= PipelineVertexInputStateCreateInfoFlags::FLAG_VERTEXATTRIBUTEDESCRIPTIONCOUNT;
         self.raw.pVertexAttributeDescriptions = vertex_attribute_descriptions.as_ptr() as *const vks::VkVertexInputAttributeDescription;
         self
     }
@@ -11320,6 +11343,7 @@ impl<'b> PipelineViewportStateCreateInfoBuilder<'b> {
         assert!(self.raw.viewportCount == 0 || self.raw.viewportCount == viewports.len() as _, 
             "count inconsistency found when specifying `PipelineViewportStateCreateInfo::viewports`.");
         self.raw.viewportCount = viewports.len() as _;
+        self.set_mask |= PipelineViewportStateCreateInfoFlags::FLAG_VIEWPORTCOUNT;
         self.raw.pViewports = viewports.as_ptr() as *const vks::VkViewport;
         self
     }
@@ -11329,6 +11353,7 @@ impl<'b> PipelineViewportStateCreateInfoBuilder<'b> {
         assert!(self.raw.scissorCount == 0 || self.raw.scissorCount == scissors.len() as _, 
             "count inconsistency found when specifying `PipelineViewportStateCreateInfo::scissors`.");
         self.raw.scissorCount = scissors.len() as _;
+        self.set_mask |= PipelineViewportStateCreateInfoFlags::FLAG_SCISSORCOUNT;
         self.raw.pScissors = scissors.as_ptr() as *const vks::VkRect2D;
         self
     }
@@ -12288,6 +12313,7 @@ impl<'b> PipelineColorBlendStateCreateInfoBuilder<'b> {
         assert!(self.raw.attachmentCount == 0 || self.raw.attachmentCount == attachments.len() as _, 
             "count inconsistency found when specifying `PipelineColorBlendStateCreateInfo::attachments`.");
         self.raw.attachmentCount = attachments.len() as _;
+        self.set_mask |= PipelineColorBlendStateCreateInfoFlags::FLAG_ATTACHMENTCOUNT;
         self.raw.pAttachments = attachments.as_ptr() as *const vks::VkPipelineColorBlendAttachmentState;
         self
     }
@@ -12449,6 +12475,7 @@ impl<'b> PipelineDynamicStateCreateInfoBuilder<'b> {
         assert!(self.raw.dynamicStateCount == 0 || self.raw.dynamicStateCount == dynamic_states.len() as _, 
             "count inconsistency found when specifying `PipelineDynamicStateCreateInfo::dynamic_states`.");
         self.raw.dynamicStateCount = dynamic_states.len() as _;
+        self.set_mask |= PipelineDynamicStateCreateInfoFlags::FLAG_DYNAMICSTATECOUNT;
         self.raw.pDynamicStates = dynamic_states.as_ptr() as *const DynamicState as *const _;
         self.set_mask |= PipelineDynamicStateCreateInfoFlags::FLAG_PDYNAMICSTATES;
         self
@@ -13243,6 +13270,7 @@ impl<'b> GraphicsPipelineCreateInfoBuilder<'b> {
         assert!(self.raw.stageCount == 0 || self.raw.stageCount == stages.len() as _, 
             "count inconsistency found when specifying `GraphicsPipelineCreateInfo::stages`.");
         self.raw.stageCount = stages.len() as _;
+        self.set_mask |= GraphicsPipelineCreateInfoFlags::FLAG_STAGECOUNT;
         self.raw.pStages = stages.as_ptr() as *const vks::VkPipelineShaderStageCreateInfo;
         self
     }
@@ -13833,6 +13861,7 @@ impl<'b> PipelineLayoutCreateInfoBuilder<'b> {
         assert!(self.raw.setLayoutCount == 0 || self.raw.setLayoutCount == set_layouts.len() as _, 
             "count inconsistency found when specifying `PipelineLayoutCreateInfo::set_layouts`.");
         self.raw.setLayoutCount = set_layouts.len() as _;
+        self.set_mask |= PipelineLayoutCreateInfoFlags::FLAG_SETLAYOUTCOUNT;
         self.raw.pSetLayouts = set_layouts.as_ptr() as *const vks::VkDescriptorSetLayout;
         self.set_mask |= PipelineLayoutCreateInfoFlags::FLAG_PSETLAYOUTS;
         self
@@ -13843,6 +13872,7 @@ impl<'b> PipelineLayoutCreateInfoBuilder<'b> {
         assert!(self.raw.pushConstantRangeCount == 0 || self.raw.pushConstantRangeCount == push_constant_ranges.len() as _, 
             "count inconsistency found when specifying `PipelineLayoutCreateInfo::push_constant_ranges`.");
         self.raw.pushConstantRangeCount = push_constant_ranges.len() as _;
+        self.set_mask |= PipelineLayoutCreateInfoFlags::FLAG_PUSHCONSTANTRANGECOUNT;
         self.raw.pPushConstantRanges = push_constant_ranges.as_ptr() as *const vks::VkPushConstantRange;
         self
     }
@@ -15072,6 +15102,7 @@ impl<'b> RenderPassBeginInfoBuilder<'b> {
         assert!(self.raw.clearValueCount == 0 || self.raw.clearValueCount == clear_values.len() as _, 
             "count inconsistency found when specifying `RenderPassBeginInfo::clear_values`.");
         self.raw.clearValueCount = clear_values.len() as _;
+        self.set_mask |= RenderPassBeginInfoFlags::FLAG_CLEARVALUECOUNT;
         self.raw.pClearValues = clear_values.as_ptr() as *const ClearValue as *const _;
         self.set_mask |= RenderPassBeginInfoFlags::FLAG_PCLEARVALUES;
         self
@@ -15863,6 +15894,7 @@ impl<'b> SubpassDescriptionBuilder<'b> {
         assert!(self.raw.inputAttachmentCount == 0 || self.raw.inputAttachmentCount == input_attachments.len() as _, 
             "count inconsistency found when specifying `SubpassDescription::input_attachments`.");
         self.raw.inputAttachmentCount = input_attachments.len() as _;
+        self.set_mask |= SubpassDescriptionFlags::FLAG_INPUTATTACHMENTCOUNT;
         self.raw.pInputAttachments = input_attachments.as_ptr() as *const vks::VkAttachmentReference;
         self
     }
@@ -15872,6 +15904,7 @@ impl<'b> SubpassDescriptionBuilder<'b> {
         assert!(self.raw.colorAttachmentCount == 0 || self.raw.colorAttachmentCount == color_attachments.len() as _, 
             "count inconsistency found when specifying `SubpassDescription::color_attachments`.");
         self.raw.colorAttachmentCount = color_attachments.len() as _;
+        self.set_mask |= SubpassDescriptionFlags::FLAG_COLORATTACHMENTCOUNT;
         self.raw.pColorAttachments = color_attachments.as_ptr() as *const vks::VkAttachmentReference;
         self
     }
@@ -15881,6 +15914,7 @@ impl<'b> SubpassDescriptionBuilder<'b> {
         assert!(self.raw.colorAttachmentCount == 0 || self.raw.colorAttachmentCount == resolve_attachments.len() as _, 
             "count inconsistency found when specifying `SubpassDescription::resolve_attachments`.");
         self.raw.colorAttachmentCount = resolve_attachments.len() as _;
+        self.set_mask |= SubpassDescriptionFlags::FLAG_COLORATTACHMENTCOUNT;
         self.raw.pResolveAttachments = resolve_attachments.as_ptr() as *const vks::VkAttachmentReference;
         self
     }
@@ -15896,6 +15930,7 @@ impl<'b> SubpassDescriptionBuilder<'b> {
         assert!(self.raw.preserveAttachmentCount == 0 || self.raw.preserveAttachmentCount == preserve_attachments.len() as _, 
             "count inconsistency found when specifying `SubpassDescription::preserve_attachments`.");
         self.raw.preserveAttachmentCount = preserve_attachments.len() as _;
+        self.set_mask |= SubpassDescriptionFlags::FLAG_PRESERVEATTACHMENTCOUNT;
         self.raw.pPreserveAttachments = preserve_attachments.as_ptr() as *const u32 as *const _;
         self.set_mask |= SubpassDescriptionFlags::FLAG_PPRESERVEATTACHMENTS;
         self
@@ -16300,6 +16335,7 @@ impl<'b> RenderPassCreateInfoBuilder<'b> {
         assert!(self.raw.attachmentCount == 0 || self.raw.attachmentCount == attachments.len() as _, 
             "count inconsistency found when specifying `RenderPassCreateInfo::attachments`.");
         self.raw.attachmentCount = attachments.len() as _;
+        self.set_mask |= RenderPassCreateInfoFlags::FLAG_ATTACHMENTCOUNT;
         self.raw.pAttachments = attachments.as_ptr() as *const vks::VkAttachmentDescription;
         self
     }
@@ -16309,6 +16345,7 @@ impl<'b> RenderPassCreateInfoBuilder<'b> {
         assert!(self.raw.subpassCount == 0 || self.raw.subpassCount == subpasses.len() as _, 
             "count inconsistency found when specifying `RenderPassCreateInfo::subpasses`.");
         self.raw.subpassCount = subpasses.len() as _;
+        self.set_mask |= RenderPassCreateInfoFlags::FLAG_SUBPASSCOUNT;
         self.raw.pSubpasses = subpasses.as_ptr() as *const vks::VkSubpassDescription;
         self
     }
@@ -16318,6 +16355,7 @@ impl<'b> RenderPassCreateInfoBuilder<'b> {
         assert!(self.raw.dependencyCount == 0 || self.raw.dependencyCount == dependencies.len() as _, 
             "count inconsistency found when specifying `RenderPassCreateInfo::dependencies`.");
         self.raw.dependencyCount = dependencies.len() as _;
+        self.set_mask |= RenderPassCreateInfoFlags::FLAG_DEPENDENCYCOUNT;
         self.raw.pDependencies = dependencies.as_ptr() as *const vks::VkSubpassDependency;
         self
     }
@@ -20555,6 +20593,7 @@ impl<'b> FramebufferCreateInfoBuilder<'b> {
         assert!(self.raw.attachmentCount == 0 || self.raw.attachmentCount == attachments.len() as _, 
             "count inconsistency found when specifying `FramebufferCreateInfo::attachments`.");
         self.raw.attachmentCount = attachments.len() as _;
+        self.set_mask |= FramebufferCreateInfoFlags::FLAG_ATTACHMENTCOUNT;
         self.raw.pAttachments = attachments.as_ptr() as *const vks::VkImageView;
         self.set_mask |= FramebufferCreateInfoFlags::FLAG_PATTACHMENTS;
         self
@@ -21190,6 +21229,7 @@ impl<'b> SubmitInfoBuilder<'b> {
         assert!(self.raw.waitSemaphoreCount == 0 || self.raw.waitSemaphoreCount == wait_semaphores.len() as _, 
             "count inconsistency found when specifying `SubmitInfo::wait_semaphores`.");
         self.raw.waitSemaphoreCount = wait_semaphores.len() as _;
+        self.set_mask |= SubmitInfoFlags::FLAG_WAITSEMAPHORECOUNT;
         self.raw.pWaitSemaphores = wait_semaphores.as_ptr() as *const vks::VkSemaphore;
         self.set_mask |= SubmitInfoFlags::FLAG_PWAITSEMAPHORES;
         self
@@ -21206,6 +21246,7 @@ impl<'b> SubmitInfoBuilder<'b> {
         assert!(self.raw.commandBufferCount == 0 || self.raw.commandBufferCount == command_buffers.len() as _, 
             "count inconsistency found when specifying `SubmitInfo::command_buffers`.");
         self.raw.commandBufferCount = command_buffers.len() as _;
+        self.set_mask |= SubmitInfoFlags::FLAG_COMMANDBUFFERCOUNT;
         self.raw.pCommandBuffers = command_buffers.as_ptr() as *const vks::VkCommandBuffer;
         self.set_mask |= SubmitInfoFlags::FLAG_PCOMMANDBUFFERS;
         self
@@ -21216,6 +21257,7 @@ impl<'b> SubmitInfoBuilder<'b> {
         assert!(self.raw.signalSemaphoreCount == 0 || self.raw.signalSemaphoreCount == signal_semaphores.len() as _, 
             "count inconsistency found when specifying `SubmitInfo::signal_semaphores`.");
         self.raw.signalSemaphoreCount = signal_semaphores.len() as _;
+        self.set_mask |= SubmitInfoFlags::FLAG_SIGNALSEMAPHORECOUNT;
         self.raw.pSignalSemaphores = signal_semaphores.as_ptr() as *const vks::VkSemaphore;
         self.set_mask |= SubmitInfoFlags::FLAG_PSIGNALSEMAPHORES;
         self
@@ -24435,6 +24477,7 @@ impl<'b> SwapchainCreateInfoKhrBuilder<'b> {
         assert!(self.raw.queueFamilyIndexCount == 0 || self.raw.queueFamilyIndexCount == queue_family_indices.len() as _, 
             "count inconsistency found when specifying `SwapchainCreateInfoKhr::queue_family_indices`.");
         self.raw.queueFamilyIndexCount = queue_family_indices.len() as _;
+        self.set_mask |= SwapchainCreateInfoKhrFlags::FLAG_QUEUEFAMILYINDEXCOUNT;
         self.raw.pQueueFamilyIndices = queue_family_indices.as_ptr() as *const u32 as *const _;
         self.set_mask |= SwapchainCreateInfoKhrFlags::FLAG_PQUEUEFAMILYINDICES;
         self
@@ -24704,6 +24747,7 @@ impl<'b> PresentInfoKhrBuilder<'b> {
         assert!(self.raw.waitSemaphoreCount == 0 || self.raw.waitSemaphoreCount == wait_semaphores.len() as _, 
             "count inconsistency found when specifying `PresentInfoKhr::wait_semaphores`.");
         self.raw.waitSemaphoreCount = wait_semaphores.len() as _;
+        self.set_mask |= PresentInfoKhrFlags::FLAG_WAITSEMAPHORECOUNT;
         self.raw.pWaitSemaphores = wait_semaphores.as_ptr() as *const vks::VkSemaphore;
         self.set_mask |= PresentInfoKhrFlags::FLAG_PWAITSEMAPHORES;
         self
@@ -24714,6 +24758,7 @@ impl<'b> PresentInfoKhrBuilder<'b> {
         assert!(self.raw.swapchainCount == 0 || self.raw.swapchainCount == swapchains.len() as _, 
             "count inconsistency found when specifying `PresentInfoKhr::swapchains`.");
         self.raw.swapchainCount = swapchains.len() as _;
+        self.set_mask |= PresentInfoKhrFlags::FLAG_SWAPCHAINCOUNT;
         self.raw.pSwapchains = swapchains.as_ptr() as *const vks::VkSwapchainKHR;
         self.set_mask |= PresentInfoKhrFlags::FLAG_PSWAPCHAINS;
         self
@@ -24724,6 +24769,7 @@ impl<'b> PresentInfoKhrBuilder<'b> {
         assert!(self.raw.swapchainCount == 0 || self.raw.swapchainCount == image_indices.len() as _, 
             "count inconsistency found when specifying `PresentInfoKhr::image_indices`.");
         self.raw.swapchainCount = image_indices.len() as _;
+        self.set_mask |= PresentInfoKhrFlags::FLAG_SWAPCHAINCOUNT;
         self.raw.pImageIndices = image_indices.as_ptr() as *const u32 as *const _;
         self.set_mask |= PresentInfoKhrFlags::FLAG_PIMAGEINDICES;
         self
@@ -24734,6 +24780,7 @@ impl<'b> PresentInfoKhrBuilder<'b> {
         assert!(self.raw.swapchainCount == 0 || self.raw.swapchainCount == results.len() as _, 
             "count inconsistency found when specifying `PresentInfoKhr::results`.");
         self.raw.swapchainCount = results.len() as _;
+        self.set_mask |= PresentInfoKhrFlags::FLAG_SWAPCHAINCOUNT;
         self.raw.pResults = results.as_mut_ptr() as *mut CallResult as *mut _;
         self.set_mask |= PresentInfoKhrFlags::FLAG_PRESULTS;
         self
@@ -25020,6 +25067,7 @@ impl<'b> ValidationFlagsExtBuilder<'b> {
         assert!(self.raw.disabledValidationCheckCount == 0 || self.raw.disabledValidationCheckCount == disabled_validation_checks.len() as _, 
             "count inconsistency found when specifying `ValidationFlagsExt::disabled_validation_checks`.");
         self.raw.disabledValidationCheckCount = disabled_validation_checks.len() as _;
+        self.set_mask |= ValidationFlagsExtFlags::FLAG_DISABLEDVALIDATIONCHECKCOUNT;
         self.raw.pDisabledValidationChecks = disabled_validation_checks.as_mut_ptr() as *mut ValidationCheckExt as *mut _;
         self.set_mask |= ValidationFlagsExtFlags::FLAG_PDISABLEDVALIDATIONCHECKS;
         self
@@ -26776,6 +26824,7 @@ impl<'b> Win32KeyedMutexAcquireReleaseInfoNvBuilder<'b> {
         assert!(self.raw.acquireCount == 0 || self.raw.acquireCount == acquire_syncs.len() as _, 
             "count inconsistency found when specifying `Win32KeyedMutexAcquireReleaseInfoNv::acquire_syncs`.");
         self.raw.acquireCount = acquire_syncs.len() as _;
+        self.set_mask |= Win32KeyedMutexAcquireReleaseInfoNvFlags::FLAG_ACQUIRECOUNT;
         self.raw.pAcquireSyncs = acquire_syncs.as_ptr() as *const vks::VkDeviceMemory;
         self.set_mask |= Win32KeyedMutexAcquireReleaseInfoNvFlags::FLAG_PACQUIRESYNCS;
         self
@@ -26786,6 +26835,7 @@ impl<'b> Win32KeyedMutexAcquireReleaseInfoNvBuilder<'b> {
         assert!(self.raw.acquireCount == 0 || self.raw.acquireCount == acquire_keys.len() as _, 
             "count inconsistency found when specifying `Win32KeyedMutexAcquireReleaseInfoNv::acquire_keys`.");
         self.raw.acquireCount = acquire_keys.len() as _;
+        self.set_mask |= Win32KeyedMutexAcquireReleaseInfoNvFlags::FLAG_ACQUIRECOUNT;
         self.raw.pAcquireKeys = acquire_keys.as_ptr() as *const u64 as *const _;
         self.set_mask |= Win32KeyedMutexAcquireReleaseInfoNvFlags::FLAG_PACQUIREKEYS;
         self
@@ -26796,6 +26846,7 @@ impl<'b> Win32KeyedMutexAcquireReleaseInfoNvBuilder<'b> {
         assert!(self.raw.acquireCount == 0 || self.raw.acquireCount == acquire_timeout_milliseconds.len() as _, 
             "count inconsistency found when specifying `Win32KeyedMutexAcquireReleaseInfoNv::acquire_timeout_milliseconds`.");
         self.raw.acquireCount = acquire_timeout_milliseconds.len() as _;
+        self.set_mask |= Win32KeyedMutexAcquireReleaseInfoNvFlags::FLAG_ACQUIRECOUNT;
         self.raw.pAcquireTimeoutMilliseconds = acquire_timeout_milliseconds.as_ptr() as *const u32 as *const _;
         self.set_mask |= Win32KeyedMutexAcquireReleaseInfoNvFlags::FLAG_PACQUIRETIMEOUTMILLISECONDS;
         self
@@ -26806,6 +26857,7 @@ impl<'b> Win32KeyedMutexAcquireReleaseInfoNvBuilder<'b> {
         assert!(self.raw.releaseCount == 0 || self.raw.releaseCount == release_syncs.len() as _, 
             "count inconsistency found when specifying `Win32KeyedMutexAcquireReleaseInfoNv::release_syncs`.");
         self.raw.releaseCount = release_syncs.len() as _;
+        self.set_mask |= Win32KeyedMutexAcquireReleaseInfoNvFlags::FLAG_RELEASECOUNT;
         self.raw.pReleaseSyncs = release_syncs.as_ptr() as *const vks::VkDeviceMemory;
         self.set_mask |= Win32KeyedMutexAcquireReleaseInfoNvFlags::FLAG_PRELEASESYNCS;
         self
@@ -26816,6 +26868,7 @@ impl<'b> Win32KeyedMutexAcquireReleaseInfoNvBuilder<'b> {
         assert!(self.raw.releaseCount == 0 || self.raw.releaseCount == release_keys.len() as _, 
             "count inconsistency found when specifying `Win32KeyedMutexAcquireReleaseInfoNv::release_keys`.");
         self.raw.releaseCount = release_keys.len() as _;
+        self.set_mask |= Win32KeyedMutexAcquireReleaseInfoNvFlags::FLAG_RELEASECOUNT;
         self.raw.pReleaseKeys = release_keys.as_ptr() as *const u64 as *const _;
         self.set_mask |= Win32KeyedMutexAcquireReleaseInfoNvFlags::FLAG_PRELEASEKEYS;
         self
@@ -29355,6 +29408,7 @@ impl<'b> PresentRegionsKhrBuilder<'b> {
         assert!(self.raw.swapchainCount == 0 || self.raw.swapchainCount == regions.len() as _, 
             "count inconsistency found when specifying `PresentRegionsKhr::regions`.");
         self.raw.swapchainCount = regions.len() as _;
+        self.set_mask |= PresentRegionsKhrFlags::FLAG_SWAPCHAINCOUNT;
         self.raw.pRegions = regions.as_ptr() as *const vks::VkPresentRegionKHR;
         self
     }
@@ -29457,6 +29511,7 @@ impl<'b> PresentRegionKhrBuilder<'b> {
         assert!(self.raw.rectangleCount == 0 || self.raw.rectangleCount == rectangles.len() as _, 
             "count inconsistency found when specifying `PresentRegionKhr::rectangles`.");
         self.raw.rectangleCount = rectangles.len() as _;
+        self.set_mask |= PresentRegionKhrFlags::FLAG_RECTANGLECOUNT;
         self.raw.pRectangles = rectangles.as_ptr() as *const vks::VkRectLayerKHR;
         self
     }
@@ -31981,6 +32036,7 @@ impl<'b> Win32KeyedMutexAcquireReleaseInfoKhrBuilder<'b> {
         assert!(self.raw.acquireCount == 0 || self.raw.acquireCount == acquire_syncs.len() as _, 
             "count inconsistency found when specifying `Win32KeyedMutexAcquireReleaseInfoKhr::acquire_syncs`.");
         self.raw.acquireCount = acquire_syncs.len() as _;
+        self.set_mask |= Win32KeyedMutexAcquireReleaseInfoKhrFlags::FLAG_ACQUIRECOUNT;
         self.raw.pAcquireSyncs = acquire_syncs.as_ptr() as *const vks::VkDeviceMemory;
         self.set_mask |= Win32KeyedMutexAcquireReleaseInfoKhrFlags::FLAG_PACQUIRESYNCS;
         self
@@ -31991,6 +32047,7 @@ impl<'b> Win32KeyedMutexAcquireReleaseInfoKhrBuilder<'b> {
         assert!(self.raw.acquireCount == 0 || self.raw.acquireCount == acquire_keys.len() as _, 
             "count inconsistency found when specifying `Win32KeyedMutexAcquireReleaseInfoKhr::acquire_keys`.");
         self.raw.acquireCount = acquire_keys.len() as _;
+        self.set_mask |= Win32KeyedMutexAcquireReleaseInfoKhrFlags::FLAG_ACQUIRECOUNT;
         self.raw.pAcquireKeys = acquire_keys.as_ptr() as *const u64 as *const _;
         self.set_mask |= Win32KeyedMutexAcquireReleaseInfoKhrFlags::FLAG_PACQUIREKEYS;
         self
@@ -32001,6 +32058,7 @@ impl<'b> Win32KeyedMutexAcquireReleaseInfoKhrBuilder<'b> {
         assert!(self.raw.acquireCount == 0 || self.raw.acquireCount == acquire_timeouts.len() as _, 
             "count inconsistency found when specifying `Win32KeyedMutexAcquireReleaseInfoKhr::acquire_timeouts`.");
         self.raw.acquireCount = acquire_timeouts.len() as _;
+        self.set_mask |= Win32KeyedMutexAcquireReleaseInfoKhrFlags::FLAG_ACQUIRECOUNT;
         self.raw.pAcquireTimeouts = acquire_timeouts.as_ptr() as *const u32 as *const _;
         self.set_mask |= Win32KeyedMutexAcquireReleaseInfoKhrFlags::FLAG_PACQUIRETIMEOUTS;
         self
@@ -32011,6 +32069,7 @@ impl<'b> Win32KeyedMutexAcquireReleaseInfoKhrBuilder<'b> {
         assert!(self.raw.releaseCount == 0 || self.raw.releaseCount == release_syncs.len() as _, 
             "count inconsistency found when specifying `Win32KeyedMutexAcquireReleaseInfoKhr::release_syncs`.");
         self.raw.releaseCount = release_syncs.len() as _;
+        self.set_mask |= Win32KeyedMutexAcquireReleaseInfoKhrFlags::FLAG_RELEASECOUNT;
         self.raw.pReleaseSyncs = release_syncs.as_ptr() as *const vks::VkDeviceMemory;
         self.set_mask |= Win32KeyedMutexAcquireReleaseInfoKhrFlags::FLAG_PRELEASESYNCS;
         self
@@ -32021,6 +32080,7 @@ impl<'b> Win32KeyedMutexAcquireReleaseInfoKhrBuilder<'b> {
         assert!(self.raw.releaseCount == 0 || self.raw.releaseCount == release_keys.len() as _, 
             "count inconsistency found when specifying `Win32KeyedMutexAcquireReleaseInfoKhr::release_keys`.");
         self.raw.releaseCount = release_keys.len() as _;
+        self.set_mask |= Win32KeyedMutexAcquireReleaseInfoKhrFlags::FLAG_RELEASECOUNT;
         self.raw.pReleaseKeys = release_keys.as_ptr() as *const u64 as *const _;
         self.set_mask |= Win32KeyedMutexAcquireReleaseInfoKhrFlags::FLAG_PRELEASEKEYS;
         self
@@ -32900,6 +32960,7 @@ impl<'b> D3d12FenceSubmitInfoKHRBuilder<'b> {
         assert!(self.raw.waitSemaphoreValuesCount == 0 || self.raw.waitSemaphoreValuesCount == wait_semaphore_values.len() as _, 
             "count inconsistency found when specifying `D3d12FenceSubmitInfoKHR::wait_semaphore_values`.");
         self.raw.waitSemaphoreValuesCount = wait_semaphore_values.len() as _;
+        self.set_mask |= D3d12FenceSubmitInfoKHRFlags::FLAG_WAITSEMAPHOREVALUESCOUNT;
         self.raw.pWaitSemaphoreValues = wait_semaphore_values.as_ptr() as *const u64 as *const _;
         self.set_mask |= D3d12FenceSubmitInfoKHRFlags::FLAG_PWAITSEMAPHOREVALUES;
         self
@@ -32910,6 +32971,7 @@ impl<'b> D3d12FenceSubmitInfoKHRBuilder<'b> {
         assert!(self.raw.signalSemaphoreValuesCount == 0 || self.raw.signalSemaphoreValuesCount == signal_semaphore_values.len() as _, 
             "count inconsistency found when specifying `D3d12FenceSubmitInfoKHR::signal_semaphore_values`.");
         self.raw.signalSemaphoreValuesCount = signal_semaphore_values.len() as _;
+        self.set_mask |= D3d12FenceSubmitInfoKHRFlags::FLAG_SIGNALSEMAPHOREVALUESCOUNT;
         self.raw.pSignalSemaphoreValues = signal_semaphore_values.as_ptr() as *const u64 as *const _;
         self.set_mask |= D3d12FenceSubmitInfoKHRFlags::FLAG_PSIGNALSEMAPHOREVALUES;
         self
@@ -35897,6 +35959,7 @@ impl<'b> DeviceGroupSubmitInfoKhxBuilder<'b> {
         assert!(self.raw.waitSemaphoreCount == 0 || self.raw.waitSemaphoreCount == wait_semaphore_device_indices.len() as _, 
             "count inconsistency found when specifying `DeviceGroupSubmitInfoKhx::wait_semaphore_device_indices`.");
         self.raw.waitSemaphoreCount = wait_semaphore_device_indices.len() as _;
+        self.set_mask |= DeviceGroupSubmitInfoKhxFlags::FLAG_WAITSEMAPHORECOUNT;
         self.raw.pWaitSemaphoreDeviceIndices = wait_semaphore_device_indices.as_ptr() as *const u32 as *const _;
         self.set_mask |= DeviceGroupSubmitInfoKhxFlags::FLAG_PWAITSEMAPHOREDEVICEINDICES;
         self
@@ -35907,6 +35970,7 @@ impl<'b> DeviceGroupSubmitInfoKhxBuilder<'b> {
         assert!(self.raw.commandBufferCount == 0 || self.raw.commandBufferCount == command_buffer_device_masks.len() as _, 
             "count inconsistency found when specifying `DeviceGroupSubmitInfoKhx::command_buffer_device_masks`.");
         self.raw.commandBufferCount = command_buffer_device_masks.len() as _;
+        self.set_mask |= DeviceGroupSubmitInfoKhxFlags::FLAG_COMMANDBUFFERCOUNT;
         self.raw.pCommandBufferDeviceMasks = command_buffer_device_masks.as_ptr() as *const u32 as *const _;
         self.set_mask |= DeviceGroupSubmitInfoKhxFlags::FLAG_PCOMMANDBUFFERDEVICEMASKS;
         self
@@ -35917,6 +35981,7 @@ impl<'b> DeviceGroupSubmitInfoKhxBuilder<'b> {
         assert!(self.raw.signalSemaphoreCount == 0 || self.raw.signalSemaphoreCount == signal_semaphore_device_indices.len() as _, 
             "count inconsistency found when specifying `DeviceGroupSubmitInfoKhx::signal_semaphore_device_indices`.");
         self.raw.signalSemaphoreCount = signal_semaphore_device_indices.len() as _;
+        self.set_mask |= DeviceGroupSubmitInfoKhxFlags::FLAG_SIGNALSEMAPHORECOUNT;
         self.raw.pSignalSemaphoreDeviceIndices = signal_semaphore_device_indices.as_ptr() as *const u32 as *const _;
         self.set_mask |= DeviceGroupSubmitInfoKhxFlags::FLAG_PSIGNALSEMAPHOREDEVICEINDICES;
         self
@@ -36778,6 +36843,7 @@ impl<'b> DeviceGroupDeviceCreateInfoKhxBuilder<'b> {
         assert!(self.raw.physicalDeviceCount == 0 || self.raw.physicalDeviceCount == physical_devices.len() as _, 
             "count inconsistency found when specifying `DeviceGroupDeviceCreateInfoKhx::physical_devices`.");
         self.raw.physicalDeviceCount = physical_devices.len() as _;
+        self.set_mask |= DeviceGroupDeviceCreateInfoKhxFlags::FLAG_PHYSICALDEVICECOUNT;
         self.raw.pPhysicalDevices = physical_devices.as_ptr() as *const vks::VkPhysicalDevice;
         self.set_mask |= DeviceGroupDeviceCreateInfoKhxFlags::FLAG_PPHYSICALDEVICES;
         self
@@ -37262,6 +37328,7 @@ impl<'b> DescriptorUpdateTemplateCreateInfoKhrBuilder<'b> {
         assert!(self.raw.descriptorUpdateEntryCount == 0 || self.raw.descriptorUpdateEntryCount == descriptor_update_entries.len() as _, 
             "count inconsistency found when specifying `DescriptorUpdateTemplateCreateInfoKhr::descriptor_update_entries`.");
         self.raw.descriptorUpdateEntryCount = descriptor_update_entries.len() as _;
+        self.set_mask |= DescriptorUpdateTemplateCreateInfoKhrFlags::FLAG_DESCRIPTORUPDATEENTRYCOUNT;
         self.raw.pDescriptorUpdateEntries = descriptor_update_entries.as_ptr() as *const vks::VkDescriptorUpdateTemplateEntryKHR;
         self
     }
@@ -38084,6 +38151,7 @@ impl<'b> PresentTimesInfoGoogleBuilder<'b> {
         assert!(self.raw.swapchainCount == 0 || self.raw.swapchainCount == times.len() as _, 
             "count inconsistency found when specifying `PresentTimesInfoGoogle::times`.");
         self.raw.swapchainCount = times.len() as _;
+        self.set_mask |= PresentTimesInfoGoogleFlags::FLAG_SWAPCHAINCOUNT;
         self.raw.pTimes = times.as_ptr() as *const vks::VkPresentTimeGOOGLE;
         self
     }
@@ -38691,6 +38759,7 @@ impl<'b> PipelineViewportWScalingStateCreateInfoNvBuilder<'b> {
         assert!(self.raw.viewportCount == 0 || self.raw.viewportCount == viewport_wscalings.len() as _, 
             "count inconsistency found when specifying `PipelineViewportWScalingStateCreateInfoNv::viewport_wscalings`.");
         self.raw.viewportCount = viewport_wscalings.len() as _;
+        self.set_mask |= PipelineViewportWScalingStateCreateInfoNvFlags::FLAG_VIEWPORTCOUNT;
         self.raw.pViewportWScalings = viewport_wscalings.as_ptr() as *const vks::VkViewportWScalingNV;
         self
     }
@@ -38975,6 +39044,7 @@ impl<'b> PipelineViewportSwizzleStateCreateInfoNvBuilder<'b> {
         assert!(self.raw.viewportCount == 0 || self.raw.viewportCount == viewport_swizzles.len() as _, 
             "count inconsistency found when specifying `PipelineViewportSwizzleStateCreateInfoNv::viewport_swizzles`.");
         self.raw.viewportCount = viewport_swizzles.len() as _;
+        self.set_mask |= PipelineViewportSwizzleStateCreateInfoNvFlags::FLAG_VIEWPORTCOUNT;
         self.raw.pViewportSwizzles = viewport_swizzles.as_ptr() as *const vks::VkViewportSwizzleNV;
         self
     }
@@ -39240,6 +39310,7 @@ impl<'b> PipelineDiscardRectangleStateCreateInfoExtBuilder<'b> {
         assert!(self.raw.discardRectangleCount == 0 || self.raw.discardRectangleCount == discard_rectangles.len() as _, 
             "count inconsistency found when specifying `PipelineDiscardRectangleStateCreateInfoExt::discard_rectangles`.");
         self.raw.discardRectangleCount = discard_rectangles.len() as _;
+        self.set_mask |= PipelineDiscardRectangleStateCreateInfoExtFlags::FLAG_DISCARDRECTANGLECOUNT;
         self.raw.pDiscardRectangles = discard_rectangles.as_ptr() as *const vks::VkRect2D;
         self
     }
@@ -41972,6 +42043,7 @@ impl<'b> PipelineCoverageModulationStateCreateInfoNvBuilder<'b> {
         assert!(self.raw.coverageModulationTableCount == 0 || self.raw.coverageModulationTableCount == coverage_modulation_table.len() as _, 
             "count inconsistency found when specifying `PipelineCoverageModulationStateCreateInfoNv::coverage_modulation_table`.");
         self.raw.coverageModulationTableCount = coverage_modulation_table.len() as _;
+        self.set_mask |= PipelineCoverageModulationStateCreateInfoNvFlags::FLAG_COVERAGEMODULATIONTABLECOUNT;
         self.raw.pCoverageModulationTable = coverage_modulation_table.as_ptr() as *const f32 as *const _;
         self.set_mask |= PipelineCoverageModulationStateCreateInfoNvFlags::FLAG_PCOVERAGEMODULATIONTABLE;
         self
